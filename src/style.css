@@ -1,14 +1,28 @@
+* {
+    box-sizing: border-box;
+}
 
+html,
 body {
     margin: 0;
+    min-height: 100%;
+}
+
+body {
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #111;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(#102f48, #071620);
+}
+
+#game {
+    width: min(100vw, 960px);
+    box-shadow: 0 24px 70px #0008;
 }
 
 canvas {
-    max-width: 100%;
+    display: block;
+    width: 100%;
     height: auto;
 }
