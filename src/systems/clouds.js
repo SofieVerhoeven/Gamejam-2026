@@ -1,8 +1,8 @@
 import Phaser from "phaser";
 import { GAME_WIDTH } from "../config.js";
-import cloudOneUrl from "../assets/Wolken/Wolk 1 copy.svg";
-import cloudTwoUrl from "../assets/Wolken/wolk2 copy.svg";
-import cloudThreeUrl from "../assets/Wolken/wolk3 copy.svg";
+import cloudOneUrl from "../assets/Wolken/wolk1.svg";
+import cloudTwoUrl from "../assets/Wolken/wolk2.svg";
+import cloudThreeUrl from "../assets/Wolken/wolk3.svg";
 
 const CLOUD_URLS = [cloudOneUrl, cloudTwoUrl, cloudThreeUrl];
 
