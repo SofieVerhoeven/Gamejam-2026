@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import birdWingsDownUrl from "../assets/bird_wings_down.svg";
 import birdWingsUpUrl from "../assets/bird_wings_up.svg";
+import { playSound, SOUNDS } from "./audio.js";
 import { getDifficulty } from "./difficulty.js";
 import { dropItemFromBird } from "./fallingItems.js";
 
@@ -72,6 +73,12 @@ function launchBirdFlyover(scene) {
     const dropperIndex = Math.random() < Phaser.Math.Linear(0.2, 0.6, difficulty)
         ? Phaser.Math.Between(0, birdCount - 1)
         : -1;
+
+    // One call per flyover keeps a flock from stacking the same sound.
+    playSound(scene, SOUNDS.seagull, {
+        volume: isFlock ? 0.45 : 0.32,
+        rate: Phaser.Math.FloatBetween(0.94, 1.06),
+    });
 
     for (let index = 0; index < birdCount; index++) {
         const rank = index === 0 ? 0 : Math.ceil(index / 2);
@@ -196,6 +203,7 @@ function weightedPick(entries) {
 }
 
 export function endGame(scene) {
+    playSound(scene, SOUNDS.splash, { volume: 0.65 });
     scene.gameOver = true;
     scene.player.setVisible(false);
     scene.eventText.setText(

@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, RAFT_WIDTH, RAFT_FLOOR_OFFSET, RAFT_FLOAT } from "../config.js";
+import { playSound, SOUNDS } from "./audio.js";
 import { getSeaY } from "./sea.js";
 import { updatePlayerAnimation } from "./entities.js";
 
@@ -156,6 +157,7 @@ function updatePlayerMovement(scene, isStandingOnRaft, isSlippery, isFrozen) {
     const jumpPressed = Phaser.Input.Keyboard.JustDown(scene.keys.jump)
         || Phaser.Input.Keyboard.JustDown(scene.cursors.up);
     if (jumpPressed && isStandingOnRaft) {
+        playSound(scene, SOUNDS.jump, { volume: 0.45 });
         const jumpSpeed = isFrozen ? -7.2 : -9;
         scene.matter.body.setVelocity(scene.player.body, {
             x: Phaser.Math.Clamp(scene.player.body.velocity.x + scene.raftVelocity.x, -8, 8),

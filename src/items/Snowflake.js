@@ -1,5 +1,6 @@
 import FallingItem from "./templates/FallingItem.js";
 import snowflakeTextureUrl from "../assets/pixelart_sneeuwvlok.svg";
+import { playSound, SOUNDS } from "../systems/audio.js";
 
 const TEXTURE_KEY = "falling-item-snowflake";
 
@@ -23,6 +24,7 @@ export default class Snowflake extends FallingItem {
     }
 
     hitRaft() {
+        playSound(this.scene, SOUNDS.snowflake, { volume: 0.55 });
         this.extendSceneTimer("frozenUntil", 6500);
         this.showMessage("DEEP FREEZE! Movement and jumping are slowed");
         this.destroyAfter(7000);
