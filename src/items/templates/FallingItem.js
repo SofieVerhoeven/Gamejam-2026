@@ -1,3 +1,5 @@
+import { playSound, SOUNDS } from "../../systems/audio.js";
+
 export default class FallingItem {
     constructor(scene, {
         texture,
@@ -44,6 +46,7 @@ export default class FallingItem {
 
     // Override these hooks in an item subclass.
     hitSea() {
+        playSound(this.scene, SOUNDS.splash, { volume: 0.45 });
         this.destroy();
     }
 

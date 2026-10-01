@@ -1,5 +1,6 @@
 import FallingItem from "./templates/FallingItem.js";
 import raindropTextureUrl from "../assets/regendruppel-removebg-preview (1).svg";
+import { playSound, SOUNDS } from "../systems/audio.js";
 
 const TEXTURE_KEY = "falling-item-raindrop";
 
@@ -22,6 +23,7 @@ export default class Raindrop extends FallingItem {
     }
 
     hitRaft() {
+        playSound(this.scene, SOUNDS.splash, { volume: 0.35, rate: 1.15 });
         this.extendSceneTimer("slipperyUntil", 3500);
         this.showMessage("WET DECK! Watch your footing");
         this.destroy();

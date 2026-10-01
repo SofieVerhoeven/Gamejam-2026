@@ -1,5 +1,6 @@
 import FallingItem from "./templates/FallingItem.js";
 import bananaTextureUrl from "../assets/banaan.svg";
+import { playSound, SOUNDS } from "../systems/audio.js";
 
 const TEXTURE_KEY = "falling-item-banana";
 
@@ -27,6 +28,7 @@ export default class Banana extends FallingItem {
     }
 
     hitRaft() {
+        playSound(this.scene, SOUNDS.banana, { volume: 0.6 });
         this.extendSceneTimer("slipperyUntil", 8000);
         this.showMessage("BANANA ON DECK! Slippery for 8 seconds");
         this.destroyAfter(9000);

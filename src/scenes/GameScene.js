@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { preloadAudio, startBackgroundMusic } from "../systems/audio.js";
 import { preloadClouds, createClouds, updateClouds } from "../systems/clouds.js";
 import { createPlayer, createRaft, preloadEntities } from "../systems/entities.js";
 import {
@@ -23,6 +24,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     preload() {
+        preloadAudio(this);
         preloadClouds(this);
         preloadEntities(this);
         preloadEvents(this);
@@ -31,6 +33,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        startBackgroundMusic(this);
         this.survivalTime = 0;
         this.lives = 3;
         this.bestScore = Number.parseFloat(localStorage.getItem("ship-happens-best-score")) || 0;
