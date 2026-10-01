@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import "./style.css";
+import { GAME_HEIGHT, GAME_WIDTH } from "./config.js";
+import GameScene from "./scenes/GameScene.js";
 import waterTextureUrl from "./assets/Water+.png";
 
 const GAME_WIDTH = 1280 ;
@@ -475,4 +477,4 @@ const config = {
     scene: [StartScene, GameScene],
 };
 
-new Phaser.Game(config);
+new Phaser.Game(config)
