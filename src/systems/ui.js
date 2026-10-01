@@ -17,6 +17,18 @@ export function createInterface(scene) {
         color: "#dff7ff",
     }).setDepth(20);
 
+    scene.livesText = scene.add.text(24, 88, "Lives: ❤️❤️❤️", {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "20px",
+        color: "#fff4c7",
+    }).setDepth(20);
+
+    scene.bestScoreText = scene.add.text(24, 118, "Best: 0.0s", {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "20px",
+        color: "#fff4c7",
+    }).setDepth(20);
+
     scene.eventText = scene.add.text(GAME_WIDTH / 2, 28, "Calm waters", {
         fontFamily: "Arial, sans-serif",
         fontSize: "20px",
@@ -26,7 +38,7 @@ export function createInterface(scene) {
         padding: { x: 14, y: 8 },
     }).setOrigin(0.5, 0).setDepth(20);
 
-    scene.add.text(GAME_WIDTH - 24, 24, "A / D or ← / →  Move\nSPACE  Jump", {
+    scene.add.text(GAME_WIDTH - 24, 24, "A / D Move\nSPACE  Jump", {
         fontFamily: "Arial, sans-serif",
         fontSize: "17px",
         color: "#ffffff",

@@ -197,6 +197,9 @@ function weightedPick(entries) {
 
 export function endGame(scene) {
     scene.gameOver = true;
+    scene.bestScore = Math.max(scene.bestScore, scene.survivalTime);
+    localStorage.setItem("ship-happens-best-score", scene.bestScore.toString());
+    scene.bestScoreText.setText(`Best: ${scene.bestScore.toFixed(1)}s`);
     scene.player.setVisible(false);
     scene.eventText.setText(
         `You stayed aboard for ${scene.survivalTime.toFixed(1)} seconds\nPress R to try again`,
