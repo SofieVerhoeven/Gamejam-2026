@@ -14,21 +14,24 @@ export const PLAYER_VISUAL = {
 export const RAFT_WIDTH = 330;
 export const RAFT_HITBOX_HEIGHT = 28;
 export const RAFT_FLOAT = {
-    // Solid bottom edge in the 209 x 93 SVG, excluding transparent padding.
-    hullBottomY: 89,
-    // Ignore the thin ropes at the ends when sampling the wooden hull.
-    hullLeftX: 15,
-    hullRightX: 194,
-    samples: 17,
-    // Screen pixels of overlap to hide gaps around uneven/antialiased edges.
-    immersion: 4,
-    maxAngleDegrees: 40,
+    // Measured opaque bounds of the wooden hull in the 209 x 93 SVG.
+    hullBottomY: 91,
+    hullLeftX: 4,
+    hullRightX: 204,
+    samples: 25,
+    // The hull normally sits slightly in the water. A damped response may add
+    // a little more penetration on a fast crest, but it is capped for fairness.
+    immersion: 3,
+    maxWavePenetration: 5,
+    positionFollow: 0.18,
+    rotationFollow: 0.14,
+    maxAngleDegrees: 32,
 };
 // Offset of the collision floor's center from the SVG center, in SVG pixels.
 // Positive x moves it right; positive y moves it down. Scales with RAFT_WIDTH.
-// Raft.svg is 209 x 93; the wood starts at y = 80. Include half the hitbox
+// Raft.svg is 209 x 93; the deck starts at y = 77. Include half the hitbox
 // height so the collision floor's TOP aligns with the wooden deck.
 export const RAFT_FLOOR_OFFSET = {
     x: 0,
-    y: 80 - 93 / 2 + (RAFT_HITBOX_HEIGHT / 2) * (209 / RAFT_WIDTH),
+    y: 77 - 93 / 2 + (RAFT_HITBOX_HEIGHT / 2) * (209 / RAFT_WIDTH),
 };

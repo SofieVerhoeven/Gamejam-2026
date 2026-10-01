@@ -25,12 +25,14 @@ export function getSeaY(scene, x, time) {
         + Math.sin(x * 0.022 + time * 0.0018) * 8 * scene.waveStrength
         + Math.sin(x * 0.047 - time * 0.0026) * 3;
 
-    if (scene.largeWave) {
-        const waveX = scene.largeWave.startX
-            + (time - scene.largeWave.startTime) * scene.largeWave.speed;
-        const distance = (x - waveX) / scene.largeWave.width;
-        y -= scene.largeWave.height * Math.exp(-0.5 * distance * distance);
+    let largeWaveLift = 0;
+    for (const wave of scene.largeWaves) {
+        const waveX = wave.startX + (time - wave.startTime) * wave.speed;
+        const distance = (x - waveX) / wave.width;
+        largeWaveLift += wave.height * Math.exp(-0.5 * distance * distance);
     }
+    // Concurrent waves stay dangerous without combining into an impossible wall.
+    y -= Math.min(largeWaveLift, 245);
 
     return y;
 }

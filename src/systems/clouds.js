@@ -91,8 +91,10 @@ export function updateClouds(scene, delta) {
         const halfWidth = cloud.image.displayWidth / 2;
 
         if (cloud.image.x - halfWidth > GAME_WIDTH) {
-            cloud.image.x = -halfWidth - Phaser.Math.Between(30, 150);
-            cloud.image.y = Phaser.Math.Between(100, 270);
+            // Start re-entering immediately. The previous extra off-screen gap
+            // made all clouds appear to vanish after their first crossing.
+            cloud.image.x = 0;
+            cloud.image.y = Phaser.Math.Between(70, 190);
         }
     }
 }

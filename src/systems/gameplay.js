@@ -9,14 +9,22 @@ export function updateGameplay(scene, time, delta, endGame) {
 
     const raftAngle = updateRaft(scene, time, delta);
     const isStandingOnRaft = time - scene.lastRaftContact < 100;
-    const jumpPressed = updatePlayerMovement(scene, isStandingOnRaft);
+    const isSlippery = time < scene.slipperyUntil;
+    const isFrozen = time < scene.frozenUntil;
+    updatePlayerFriction(scene, isSlippery);
+    const jumpPressed = updatePlayerMovement(
+        scene,
+        isStandingOnRaft,
+        isSlippery,
+        isFrozen,
+    );
     const left = scene.keys.left.isDown || scene.cursors.left.isDown;
     const right = scene.keys.right.isDown || scene.cursors.right.isDown;
     updatePlayerAnimation(scene, time, delta,
         isStandingOnRaft && !jumpPressed,
         left ? -1 : right ? 1 : 0);
 
-    applyRaftGrip(scene, raftAngle, isStandingOnRaft, jumpPressed);
+    applyRaftGrip(scene, raftAngle, isStandingOnRaft, jumpPressed, isSlippery);
 
     const waterBelowPlayer = getSeaY(scene, scene.player.x, time);
     if (
@@ -29,34 +37,68 @@ export function updateGameplay(scene, time, delta, endGame) {
 }
 
 function updateRaft(scene, time, delta) {
+    const isAnchorWeighted = time < scene.anchorWeightUntil;
     const svgScale = RAFT_WIDTH / 209;
     const raftHalfSample = (RAFT_FLOAT.hullRightX - RAFT_FLOAT.hullLeftX) * svgScale / 2;
     const waterLeft = getSeaY(scene, GAME_WIDTH / 2 - raftHalfSample, time);
     const waterRight = getSeaY(scene, GAME_WIDTH / 2 + raftHalfSample, time);
     const maxRaftAngle = Phaser.Math.DegToRad(RAFT_FLOAT.maxAngleDegrees);
-    const raftAngle = Phaser.Math.Clamp(
-        Math.atan2(waterRight - waterLeft, raftHalfSample * 2),
+    const anchorTilt = isAnchorWeighted ? scene.anchorTiltRadians : 0;
+    const targetRaftAngle = Phaser.Math.Clamp(
+        Math.atan2(waterRight - waterLeft, raftHalfSample * 2) + anchorTilt,
         -maxRaftAngle,
         maxRaftAngle,
     );
 
+    // Ease toward the wave angle instead of making the raft rigidly snap to it.
+    const normalizedDelta = Phaser.Math.Clamp(delta / 16.667, 0.25, 3);
+    const rotationBlend = 1 - Math.pow(1 - RAFT_FLOAT.rotationFollow, normalizedDelta);
+    const raftAngle = Phaser.Math.Linear(
+        scene.previousRaftPose.angle,
+        targetRaftAngle,
+        rotationBlend,
+    );
+
     // Match the visible hull rather than the texture bounds or body center.
     // Rotated samples account for curved waves under the entire wooden base.
-    // The lowest required position keeps gaps from opening below the hull.
+    // Screen Y grows downward, so the smallest allowed center Y is the highest
+    // water contact. Using the lowest contact would push the rigid hull through
+    // every crest that rises above it.
     const anchorX = 209 / 2 + RAFT_FLOOR_OFFSET.x;
     const anchorY = 93 / 2 + RAFT_FLOOR_OFFSET.y;
     const localY = (RAFT_FLOAT.hullBottomY - anchorY) * svgScale;
     const cos = Math.cos(raftAngle);
     const sin = Math.sin(raftAngle);
     const sampleCount = Math.max(2, Math.round(RAFT_FLOAT.samples));
-    let raftY = -Infinity;
+    let targetRaftY = Infinity;
     for (let i = 0; i < sampleCount; i++) {
         const svgX = Phaser.Math.Linear(RAFT_FLOAT.hullLeftX, RAFT_FLOAT.hullRightX, i / (sampleCount - 1));
         const localX = (svgX - anchorX) * svgScale;
         const worldX = GAME_WIDTH / 2 + localX * cos - localY * sin;
         const rotatedY = localX * sin + localY * cos;
-        raftY = Math.max(raftY, getSeaY(scene, worldX, time) - rotatedY + RAFT_FLOAT.immersion);
+        targetRaftY = Math.min(
+            targetRaftY,
+            getSeaY(scene, worldX, time) - rotatedY + RAFT_FLOAT.immersion,
+        );
     }
+
+    // Soft vertical following adds buoyant-looking lag. When a crest rises
+    // quickly, clamp that lag so only a controlled amount crosses the hull.
+    if (isAnchorWeighted) targetRaftY += 7;
+
+    const followStrength = isAnchorWeighted
+        ? RAFT_FLOAT.positionFollow * 0.55
+        : RAFT_FLOAT.positionFollow;
+    const positionBlend = 1 - Math.pow(1 - followStrength, normalizedDelta);
+    const softenedRaftY = Phaser.Math.Linear(
+        scene.previousRaftPose.y,
+        targetRaftY,
+        positionBlend,
+    );
+    const raftY = Math.min(
+        softenedRaftY,
+        targetRaftY + RAFT_FLOAT.maxWavePenetration,
+    );
 
     const frameScale = Phaser.Math.Clamp(16.667 / Math.max(delta, 1), 0.5, 2);
     const angleVelocity = (raftAngle - scene.previousRaftPose.angle) * frameScale;
@@ -72,22 +114,29 @@ function updateRaft(scene, time, delta) {
     return raftAngle;
 }
 
-function updatePlayerMovement(scene, isStandingOnRaft) {
+function updatePlayerMovement(scene, isStandingOnRaft, isSlippery, isFrozen) {
     const left = scene.keys.left.isDown || scene.cursors.left.isDown;
     const right = scene.keys.right.isDown || scene.cursors.right.isDown;
 
     if ((left || right) && isStandingOnRaft) {
-        const targetSpeed = left ? -6 : 6;
+        const movementSpeed = isFrozen ? 3.2 : 6;
+        const targetSpeed = left ? -movementSpeed : movementSpeed;
         scene.matter.body.setVelocity(scene.player.body, {
-            x: Phaser.Math.Linear(scene.player.body.velocity.x, targetSpeed, 0.28),
+            x: Phaser.Math.Linear(
+                scene.player.body.velocity.x,
+                targetSpeed,
+                isFrozen ? 0.14 : isSlippery ? 0.12 : 0.28,
+            ),
             y: scene.player.body.velocity.y,
         });
     } else if (left || right) {
         const airDirection = left ? -1 : 1;
+        const maxAirSpeed = isFrozen ? 3.5 : 6.5;
+        const airAcceleration = isFrozen ? 0.035 : 0.08;
         const airSpeed = Phaser.Math.Clamp(
-            scene.player.body.velocity.x + airDirection * 0.08,
-            -6.5,
-            6.5,
+            scene.player.body.velocity.x + airDirection * airAcceleration,
+            -maxAirSpeed,
+            maxAirSpeed,
         );
         scene.matter.body.setVelocity(scene.player.body, {
             x: airSpeed,
@@ -95,7 +144,11 @@ function updatePlayerMovement(scene, isStandingOnRaft) {
         });
     } else if (isStandingOnRaft) {
         scene.matter.body.setVelocity(scene.player.body, {
-            x: Phaser.Math.Linear(scene.player.body.velocity.x, 0, 0.12),
+            x: Phaser.Math.Linear(
+                scene.player.body.velocity.x,
+                0,
+                isSlippery ? 0.008 : 0.12,
+            ),
             y: scene.player.body.velocity.y,
         });
     }
@@ -103,9 +156,10 @@ function updatePlayerMovement(scene, isStandingOnRaft) {
     const jumpPressed = Phaser.Input.Keyboard.JustDown(scene.keys.jump)
         || Phaser.Input.Keyboard.JustDown(scene.cursors.up);
     if (jumpPressed && isStandingOnRaft) {
+        const jumpSpeed = isFrozen ? -7.2 : -9;
         scene.matter.body.setVelocity(scene.player.body, {
             x: Phaser.Math.Clamp(scene.player.body.velocity.x + scene.raftVelocity.x, -8, 8),
-            y: Phaser.Math.Clamp(-9 + scene.raftVelocity.y, -11, -7),
+            y: Phaser.Math.Clamp(jumpSpeed + scene.raftVelocity.y, -11, -6),
         });
         scene.lastRaftContact = -1000;
     }
@@ -113,8 +167,12 @@ function updatePlayerMovement(scene, isStandingOnRaft) {
     return jumpPressed;
 }
 
-function applyRaftGrip(scene, raftAngle, isStandingOnRaft, jumpPressed) {
+function applyRaftGrip(scene, raftAngle, isStandingOnRaft, jumpPressed, isSlippery) {
     if (!isStandingOnRaft || jumpPressed) return;
+
+    // On a banana the physics body has almost no friction and receives no
+    // artificial slope compensation, allowing gravity and momentum to slide it.
+    if (isSlippery) return;
 
     const gravityForce = 0.00115 * scene.player.body.mass;
     const downhillGravity = gravityForce * Math.sin(raftAngle);
@@ -122,5 +180,15 @@ function applyRaftGrip(scene, raftAngle, isStandingOnRaft, jumpPressed) {
     scene.matter.body.applyForce(scene.player.body, scene.player.body.position, {
         x: -downhillGravity * Math.cos(raftAngle) - footingForce * Math.sin(raftAngle),
         y: -downhillGravity * Math.sin(raftAngle) + footingForce * Math.cos(raftAngle),
+    });
+}
+
+function updatePlayerFriction(scene, isSlippery) {
+    if (scene.playerIsSlippery === isSlippery) return;
+    scene.playerIsSlippery = isSlippery;
+
+    scene.matter.body.set(scene.player.body, {
+        friction: isSlippery ? 0.001 : 0.15,
+        frictionStatic: isSlippery ? 0 : 0.2,
     });
 }
