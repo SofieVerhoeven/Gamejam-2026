@@ -25,7 +25,7 @@ export function createClouds(scene) {
             .setAlpha(0.9)
             .setDepth(-8);
 
-        return { image: cloud, speed: Phaser.Math.FloatBetween(2, 5) };
+        return { image: cloud, speed: Phaser.Math.FloatBetween(5, 10) };
     });
 }
 

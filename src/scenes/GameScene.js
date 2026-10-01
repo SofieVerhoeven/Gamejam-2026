@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { preloadClouds, createClouds, updateClouds } from "../systems/clouds.js";
-import { createPlayer, createRaft } from "../systems/entities.js";
+import { createPlayer, createRaft, preloadEntities } from "../systems/entities.js";
 import { endGame, startRandomEvent } from "../systems/events.js";
 import { updateGameplay } from "../systems/gameplay.js";
 import { preloadSea, createSea, drawSea } from "../systems/sea.js";
@@ -13,6 +13,7 @@ export default class GameScene extends Phaser.Scene {
 
     preload() {
         preloadClouds(this);
+        preloadEntities(this);
         preloadSea(this);
     }
 

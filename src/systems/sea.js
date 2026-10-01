@@ -50,6 +50,7 @@ export function drawSea(scene, time) {
         scene.skyCover.lineTo(x, getSeaY(scene, x, time));
     }
 
+    scene.skyCover.lineTo(0, getSeaY(scene, 0, time));
     scene.skyCover.closePath();
     scene.skyCover.fillPath();
 }

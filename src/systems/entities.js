@@ -1,23 +1,36 @@
-import { GAME_WIDTH, SEA_LEVEL } from "../config.js";
+import { GAME_WIDTH, SEA_LEVEL, RAFT_WIDTH, RAFT_HITBOX_HEIGHT, RAFT_FLOOR_OFFSET } from "../config.js";
+import raftTextureUrl from "../assets/Raft.svg";
+
+const RAFT_HEIGHT = RAFT_WIDTH * (93 / 209);
+
+export function preloadEntities(scene) {
+    scene.load.svg("raft", raftTextureUrl);
+}
 
 export function createRaft(scene) {
     const x = GAME_WIDTH / 2;
     const y = SEA_LEVEL - 34;
-    scene.raft = scene.add.container(x, y);
+    scene.raft = scene.add.image(x, y, "raft")
+        .setDisplaySize(RAFT_WIDTH, RAFT_HEIGHT);
 
-    const deck = scene.add.rectangle(0, 0, 330, 28, 0xa96332).setStrokeStyle(3, 0x63361f);
-    const plankLines = [-65, 0, 65].map((lineX) => (
-        scene.add.rectangle(lineX, 0, 3, 26, 0x704024)
-    ));
-    scene.raft.add([deck, ...plankLines]);
-    scene.raft.setSize(330, 28);
     scene.matter.add.gameObject(scene.raft, {
-        shape: { type: "rectangle", width: 330, height: 28 },
+        shape: {
+            type: "rectangle",
+            width: RAFT_WIDTH,
+            height: RAFT_HITBOX_HEIGHT,
+        },
         isStatic: true,
         friction: 0.15,
         frictionStatic: 0.2,
         restitution: 0,
     });
+
+    // Matter positions the image at the body center. Anchor the artwork at
+    // the deck instead, keeping the floor aligned as the raft tilts and moves.
+    scene.raft.setOrigin(
+        0.5 + RAFT_FLOOR_OFFSET.x / 209,
+        0.5 + RAFT_FLOOR_OFFSET.y / 93,
+    );
 
     scene.previousRaftPose = { x, y, angle: 0 };
     scene.raftVelocity = { x: 0, y: 0 };
