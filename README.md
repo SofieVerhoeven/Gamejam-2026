@@ -34,3 +34,6 @@ npm install
 ```bash
 npm run dev
 ```
+
+# Phaser documentation
+https://phaser.io/tools/phaser-docs
