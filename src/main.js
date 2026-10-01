@@ -5,6 +5,101 @@ import waterTextureUrl from "./assets/Water+.png";
 const GAME_WIDTH = 1280 ;
 const GAME_HEIGHT = 720 ;
 const SEA_LEVEL = 550;
+const HIGH_SCORE_KEY = "ship-happens-high-score";
+
+class StartScene extends Phaser.Scene {
+    constructor() {
+        super("StartScene");
+    }
+
+    create() {
+        this.starting = false;
+        this.createBackdrop();
+
+        this.add.text(GAME_WIDTH / 2, 150, "SHIP HAPPENS", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "76px",
+            fontStyle: "bold",
+            color: "#ffffff",
+            stroke: "#173149",
+            strokeThickness: 9,
+        }).setOrigin(0.5);
+
+        this.add.text(GAME_WIDTH / 2, 235, "The raft is small. The waves are not.", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "24px",
+            color: "#fff4c7",
+        }).setOrigin(0.5);
+
+        const button = this.add.rectangle(GAME_WIDTH / 2, 365, 270, 76, 0xa96332)
+            .setStrokeStyle(4, 0x63361f)
+            .setInteractive({ useHandCursor: true });
+        const buttonText = this.add.text(GAME_WIDTH / 2, 365, "PLAY", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "32px",
+            fontStyle: "bold",
+            color: "#ffffff",
+        }).setOrigin(0.5);
+
+        button.on("pointerover", () => {
+            button.setFillStyle(0xc2763d);
+            buttonText.setScale(1.05);
+        });
+        button.on("pointerout", () => {
+            button.setFillStyle(0xa96332);
+            buttonText.setScale(1);
+        });
+        button.on("pointerdown", () => this.startGame());
+
+        this.add.text(GAME_WIDTH / 2, 485, "A / D Move     SPACE  Jump", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "20px",
+            color: "#dff7ff",
+        }).setOrigin(0.5);
+
+        this.add.text(GAME_WIDTH / 2, 635, "Press ENTER or click PLAY to begin", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "18px",
+            color: "#173149",
+        }).setOrigin(0.5);
+
+        this.input.keyboard.on("keydown-ENTER", () => this.startGame());
+        this.input.keyboard.on("keydown-SPACE", () => this.startGame());
+    }
+
+    createBackdrop() {
+        this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x75c8e8).setOrigin(0);
+        this.add.rectangle(0, 520, GAME_WIDTH, 200, 0x237da8).setOrigin(0);
+
+        this.clouds = [
+            this.add.ellipse(190, 125, 230, 46, 0xffffff, 0.72),
+            this.add.ellipse(1040, 105, 290, 54, 0xffffff, 0.58),
+        ];
+
+        this.waveLines = this.add.graphics();
+    }
+
+    startGame() {
+        if (this.starting) return;
+        this.starting = true;
+        this.cameras.main.fadeOut(250, 23, 49, 73);
+        this.time.delayedCall(250, () => this.scene.start("GameScene"));
+    }
+
+    update(time) {
+        this.waveLines.clear();
+        this.waveLines.lineStyle(4, 0x75c8e8, 0.55);
+        for (let y = 550; y < GAME_HEIGHT; y += 38) {
+            this.waveLines.beginPath();
+            for (let x = 0; x <= GAME_WIDTH; x += 16) {
+                const waveY = y + Math.sin(x * 0.02 + time * 0.0015 + y) * 7;
+                if (x === 0) this.waveLines.moveTo(x, waveY);
+                else this.waveLines.lineTo(x, waveY);
+            }
+            this.waveLines.strokePath();
+        }
+    }
+}
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -20,6 +115,8 @@ class GameScene extends Phaser.Scene {
 
     create() {
         this.survivalTime = 0;
+        this.highScore = Number.parseFloat(localStorage.getItem(HIGH_SCORE_KEY)) || 0;
+        this.lives = 3;
         this.gameOver = false;
         this.waveStrength = 1;
         this.largeWave = null;
@@ -110,6 +207,29 @@ class GameScene extends Phaser.Scene {
             color: "#dff7ff",
         }).setDepth(20);
 
+        this.highScoreText = this.add.text(24, 119, `Best: ${this.highScore.toFixed(1)}s`, {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "18px",
+            color: "#fff4c7",
+        }).setDepth(20);
+
+        this.add.text(24, 91, "LIVES", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "16px",
+            fontStyle: "bold",
+            color: "#ffffff",
+        }).setDepth(20);
+
+        this.heartText = this.add.text(88, 85, "", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "25px",
+            color: "#ff5c63",
+            stroke: "#593724",
+            strokeThickness: 2,
+            letterSpacing: 5,
+        }).setDepth(20);
+        this.updateLivesDisplay();
+
         this.eventText = this.add.text(GAME_WIDTH / 2, 28, "Calm waters", {
             fontFamily: "Arial, sans-serif",
             fontSize: "20px",
@@ -119,7 +239,7 @@ class GameScene extends Phaser.Scene {
             padding: { x: 14, y: 8 },
         }).setOrigin(0.5, 0).setDepth(20);
 
-        this.add.text(GAME_WIDTH - 24, 24, "A / D or ← / →  Move\nSPACE  Jump", {
+        this.add.text(GAME_WIDTH - 24, 24, "A / D or Move\nSPACE  Jump", {
             fontFamily: "Arial, sans-serif",
             fontSize: "17px",
             color: "#ffffff",
@@ -298,10 +418,44 @@ class GameScene extends Phaser.Scene {
     }
 
     endGame() {
+        this.saveHighScore();
+        this.lives -= 1;
+        this.updateLivesDisplay();
+
+        if (this.lives > 0) {
+            this.survivalTime = 0;
+            this.timerText.setText("Time: 0.0s");
+            const respawnY = this.getSeaY(GAME_WIDTH / 2, this.time.now) - 100;
+            this.matter.body.setPosition(this.player.body, {
+                x: GAME_WIDTH / 2,
+                y: respawnY,
+            });
+            this.matter.body.setVelocity(this.player.body, { x: 0, y: 0 });
+            this.player.setVisible(true);
+            this.lastRaftContact = this.time.now;
+            this.eventText.setText(`Careful! ${this.lives} ${this.lives === 1 ? "life" : "lives"} left`);
+            this.time.delayedCall(1200, () => {
+                if (!this.gameOver) this.eventText.setText("Calm waters");
+            });
+            return;
+        }
+
         this.gameOver = true;
         this.player.setVisible(false);
-        this.eventText.setText(`You stayed aboard for ${this.survivalTime.toFixed(1)} seconds\nPress R to try again`);
+        this.eventText.setText(`You stayed aboard for ${this.survivalTime.toFixed(1)} seconds\nBest: ${this.highScore.toFixed(1)}s\nNo lives left - press R to try again`);
         this.eventText.setAlign("center");
+    }
+
+    saveHighScore() {
+        if (this.survivalTime <= this.highScore) return;
+
+        this.highScore = this.survivalTime;
+        localStorage.setItem(HIGH_SCORE_KEY, this.highScore.toString());
+        this.highScoreText.setText(`Best: ${this.highScore.toFixed(1)}s`);
+    }
+
+    updateLivesDisplay() {
+        this.heartText.setText("♥".repeat(this.lives) + "♡".repeat(3 - this.lives));
     }
 }
 
@@ -318,7 +472,7 @@ const config = {
             debug: false,
         },
     },
-    scene: GameScene,
+    scene: [StartScene, GameScene],
 };
 
 new Phaser.Game(config);
