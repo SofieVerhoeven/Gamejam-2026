@@ -35,7 +35,7 @@ export default class GameScene extends Phaser.Scene {
     create() {
         startBackgroundMusic(this);
         this.survivalTime = 0;
-        this.lives = 3;
+        this.lives = 1;
         this.bestScore = Number.parseFloat(localStorage.getItem("ship-happens-best-score")) || 0;
         this.gameOver = false;
         this.waveStrength = 1;

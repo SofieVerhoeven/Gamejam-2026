@@ -17,7 +17,7 @@ export function createInterface(scene) {
         color: "#dff7ff",
     }).setDepth(20);
 
-    scene.livesText = scene.add.text(24, 88, "Lives: ❤️❤️❤️", {
+    scene.livesText = scene.add.text(24, 88, "Lives: ❤️", {
         fontFamily: "Arial, sans-serif",
         fontSize: "20px",
         color: "#fff4c7",
