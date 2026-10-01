@@ -3,4 +3,5 @@
 Malek Aharar, Milan Van Calster, Veerle Boeckx, Sofie Verhoeven
 
 ## Title of the game
-Drunken Sailor
+* Drunken Sailor
+* Ship Happens
