@@ -1,15 +1,21 @@
-import { GAME_WIDTH, SEA_LEVEL, RAFT_WIDTH, RAFT_HITBOX_HEIGHT, RAFT_FLOOR_OFFSET } from "../config.js";
+import { GAME_WIDTH, SEA_LEVEL, RAFT_WIDTH, RAFT_HITBOX_HEIGHT, RAFT_FLOOR_OFFSET, PLAYER_VISUAL } from "../config.js";
 import raftTextureUrl from "../assets/Raft.svg";
+import playerIdleUrl from "../assets/Mannetje.svg";
+import playerWalkUrl from "../assets/Mannetje_wandel.png";
+import playerJumpUrl from "../assets/Mannetje_spring.png";
 
 const RAFT_HEIGHT = RAFT_WIDTH * (93 / 209);
 
 export function preloadEntities(scene) {
     scene.load.svg("raft", raftTextureUrl);
+    scene.load.svg("player-idle", playerIdleUrl);
+    scene.load.image("player-walk", playerWalkUrl);
+    scene.load.image("player-jump", playerJumpUrl);
 }
 
 export function createRaft(scene) {
     const x = GAME_WIDTH / 2;
-    const y = SEA_LEVEL - 34;
+    const y = SEA_LEVEL;
     scene.raft = scene.add.image(x, y, "raft")
         .setDisplaySize(RAFT_WIDTH, RAFT_HEIGHT);
 
@@ -39,9 +45,13 @@ export function createRaft(scene) {
 export function createPlayer(scene) {
     scene.player = scene.add.container(GAME_WIDTH / 2, SEA_LEVEL - 100);
 
-    const body = scene.add.rectangle(0, 10, 28, 40, 0xf3b83f).setStrokeStyle(3, 0x593724);
-    const head = scene.add.circle(0, -18, 14, 0xffd39d).setStrokeStyle(3, 0x593724);
-    scene.player.add([body, head]);
+    // Keep the visual separate from the physics container so animation does
+    // not change the collision body. Feet stay at the body's lower edge.
+    scene.playerVisual = scene.add.image(0, 32, "player-idle")
+        .setOrigin(0.5, 1)
+        .setDisplaySize(PLAYER_VISUAL.width, PLAYER_VISUAL.height);
+    scene.player.add(scene.playerVisual);
+    scene.playerWalkPhase = 0;
     scene.player.setSize(28, 64);
     scene.matter.add.gameObject(scene.player, {
         shape: { type: "rectangle", width: 28, height: 64 },
@@ -52,4 +62,26 @@ export function createPlayer(scene) {
         restitution: 0,
         inertia: Infinity,
     });
+}
+
+export function updatePlayerAnimation(scene, time, delta, grounded, direction) {
+    const visual = scene.playerVisual;
+    if (direction !== 0) visual.setFlipX(direction < 0);
+
+    let texture = "player-idle";
+    let bob = Math.sin(time / 350) * PLAYER_VISUAL.idleBob;
+    if (!grounded) {
+        texture = "player-jump";
+        bob = 0;
+        scene.playerWalkPhase = 0;
+    } else if (direction !== 0) {
+        scene.playerWalkPhase += delta / 1000 * PLAYER_VISUAL.walkCyclesPerSecond * Math.PI * 2;
+        texture = Math.sin(scene.playerWalkPhase) >= 0 ? "player-walk" : "player-idle";
+        bob = -Math.abs(Math.sin(scene.playerWalkPhase)) * PLAYER_VISUAL.walkBob;
+    } else {
+        scene.playerWalkPhase = 0;
+    }
+
+    visual.setTexture(texture).setDisplaySize(PLAYER_VISUAL.width, PLAYER_VISUAL.height);
+    visual.y = 32 + bob;
 }
