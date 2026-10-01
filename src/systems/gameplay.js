@@ -33,7 +33,26 @@ export function updateGameplay(scene, time, delta, endGame) {
         || scene.player.x < -40
         || scene.player.x > GAME_WIDTH + 40
     ) {
-        endGame();
+        scene.lives -= 1;
+        scene.livesText.setText(`Lives: ${"❤️".repeat(scene.lives)}`);
+        scene.bestScore = Math.max(scene.bestScore, scene.survivalTime);
+        scene.bestScoreText.setText(`Best: ${scene.bestScore.toFixed(1)}s`);
+        localStorage.setItem("ship-happens-best-score", scene.bestScore.toString());
+
+        if (scene.lives <= 0) {
+            endGame();
+            return;
+        }
+
+        scene.matter.body.setPosition(scene.player.body, {
+            x: GAME_WIDTH / 2,
+            y: scene.raft.y - 75,
+        });
+        scene.matter.body.setVelocity(scene.player.body, { x: 0, y: 0 });
+        scene.matter.body.setAngularVelocity(scene.player.body, 0);
+        scene.player.setVisible(true);
+        scene.lastRaftContact = time;
+        scene.eventText.setText(`Life lost! ${scene.lives} remaining`);
     }
 }
 
